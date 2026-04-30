@@ -7,34 +7,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Récupère votre code source
       - name: Checkout Project
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install ARM Toolchain
+      # 2. Récupère le SDK Pico (remplace le git clone manuel)
+      - name: Checkout Pico SDK
+        uses: actions/checkout@v4
+        with:
+          repository: raspberrypi/pico-sdk
+          path: pico-sdk
+          submodules: true
+          fetch-depth: 1
+
+      # 3. Installe les outils de compilation
+      - name: Install Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
 
-      - name: Download Pico SDK
+      # 4. Compilation avec chemins explicites
+      - name: Build Firmware
         run: |
-          git clone --depth 1 https://github.com $HOME/pico-sdk
-          cd $HOME/pico-sdk
-          git submodule update --init --depth 1
-
-      - name: Compile
-        run: |
-          export PICO_SDK_PATH=$HOME/pico-sdk
+          # On définit le chemin absolu du SDK pour CMake
+          export PICO_SDK_PATH=${{ github.workspace }}/pico-sdk
           cd Firmware
           mkdir build
           cd build
-          # On force CMake à voir le fichier dans le dossier parent
-          cmake .. -DPICO_SDK_PATH=$HOME/pico-sdk
+          cmake .. -DPICO_SDK_PATH=${{ github.workspace }}/pico-sdk
           make -j$(nproc)
 
-      - name: Upload
+      # 5. Récupération du fichier binaire
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: logic-analyzer-binary
+          name: logic-analyzer-firmware
           path: Firmware/build/*.uf2
