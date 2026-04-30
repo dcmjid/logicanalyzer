@@ -1,4 +1,4 @@
-name: Build LogicAnalyzer (Pico FIX)
+name: Build LogicAnalyzer (Pico FIX FINAL)
 
 on:
   push:
@@ -23,18 +23,21 @@ jobs:
         git -C pico-sdk submodule update --init
         echo "PICO_SDK_PATH=$(pwd)/pico-sdk" >> $GITHUB_ENV
 
-    # 🔥 FIX PRINCIPAL ICI
-    - name: Configure (Pico classique + fix headers)
+    - name: Configure
       run: |
         mkdir -p build
         cd build
         cmake ../Firmware/LogicAnalyzer \
           -DPICO_SDK_PATH=$PICO_SDK_PATH \
           -DBOARD_TYPE=BOARD_PICO \
-          -DPICO_BOARD=pico \
-          -DCMAKE_C_FLAGS="-I$(pwd)/../Firmware/LogicAnalyzer -DBUILD_PICO"
+          -DPICO_BOARD=pico
 
-    - name: Build firmware
+    # 🔥 FIX CRITIQUE ICI
+    - name: Fix broken include in generated file
+      run: |
+        sed -i 's|#include "../LogicAnalyzer_Board_Settings.h"|#include "LogicAnalyzer_Board_Settings.h"|g' build/LogicAnalyzer.pio.h
+
+    - name: Build
       run: |
         cd build
         make -j$(nproc)
