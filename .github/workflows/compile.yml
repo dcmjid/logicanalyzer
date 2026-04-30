@@ -1,6 +1,9 @@
 name: Compile Pico Firmware
 
-on: [push, pull_request, workflow_dispatch]
+on: 
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,7 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: 'true'
+          fetch-depth: 1
 
       - name: Install Dependencies
         run: |
@@ -20,12 +24,9 @@ jobs:
       - name: Setup Pico SDK
         run: |
           git clone --depth 1 https://github.com
-          echo "PICO_SDK_PATH=$GITHUB_WORKSPACE/pico-sdk" >> $GITHUB_ENV
-
-      - name: Initialize Pico SDK
-        run: |
           cd pico-sdk
-          git submodule update --init
+          git submodule update --init --depth 1
+          echo "PICO_SDK_PATH=$GITHUB_WORKSPACE/pico-sdk" >> $GITHUB_ENV
 
       - name: Build Firmware
         run: |
