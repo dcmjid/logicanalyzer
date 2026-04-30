@@ -1,47 +1,37 @@
 name: Compile Pico Firmware
 
-on: 
-  push:
-  pull_request:
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Logic Analyzer Code
+      - name: Checkout Logic Analyzer
         uses: actions/checkout@v4
         with:
-          submodules: 'true'
-          fetch-depth: 1
+          submodules: recursive # Récupère tout d'un coup
 
-      - name: Checkout Pico SDK
-        uses: actions/checkout@v4
-        with:
-          repository: raspberrypi/pico-sdk
-          path: pico-sdk
-          submodules: 'true'
-          fetch-depth: 1
-
-      - name: Install Dependencies
+      - name: Install Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
 
+      - name: Setup Pico SDK
+        run: |
+          git clone --depth 1 https://github.com ${GITHUB_WORKSPACE}/pico-sdk
+          cd ${GITHUB_WORKSPACE}/pico-sdk
+          git submodule update --init --depth 1
+
       - name: Build Firmware
-        env:
-          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
         run: |
           cd Firmware
-          mkdir build
-          cd build
-          cmake ..
-          make -j$(nproc)
+          # On définit le chemin du SDK et on lance le build proprement
+          cmake -S . -B build -DPICO_SDK_PATH=${GITHUB_WORKSPACE}/pico-sdk
+          cmake --build build -j $(nproc)
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: logic-analyzer-firmware
-          path: |
-            Firmware/build/*.uf2
+          path: Firmware/build/*.uf2
