@@ -1,47 +1,45 @@
-name: Compile Pico Firmware
+name: Build LogicAnalyzer (Pico)
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Récupère votre code source
-      - name: Checkout Project
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-      # 2. Récupère le SDK Pico (remplace le git clone manuel)
-      - name: Checkout Pico SDK
-        uses: actions/checkout@v4
-        with:
-          repository: raspberrypi/pico-sdk
-          path: pico-sdk
-          submodules: true
-          fetch-depth: 1
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential git
 
-      # 3. Installe les outils de compilation
-      - name: Install Toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
+    - name: Clone Pico SDK
+      run: |
+        git clone https://github.com/raspberrypi/pico-sdk.git --depth 1
+        git -C pico-sdk submodule update --init
+        echo "PICO_SDK_PATH=$(pwd)/pico-sdk" >> $GITHUB_ENV
 
-      # 4. Compilation avec chemins explicites
-      - name: Build Firmware
-        run: |
-          # On définit le chemin absolu du SDK pour CMake
-          export PICO_SDK_PATH=${{ github.workspace }}/pico-sdk
-          cd Firmware
-          mkdir build
-          cd build
-          cmake .. -DPICO_SDK_PATH=${{ github.workspace }}/pico-sdk
-          make -j$(nproc)
+    - name: Configure (Pico classique)
+      run: |
+        mkdir -p build
+        cd build
+        cmake ../Firmware/LogicAnalyzer \
+          -DPICO_SDK_PATH=$PICO_SDK_PATH \
+          -DBOARD_TYPE=BOARD_PICO
 
-      # 5. Récupération du fichier binaire
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: logic-analyzer-firmware
-          path: Firmware/build/*.uf2
+    - name: Build firmware
+      run: |
+        cd build
+        make -j$(nproc)
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: logic-analyzer-pico
+        path: |
+          build/*.uf2
+          build/*.elf
