@@ -7,31 +7,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Logic Analyzer
+      - name: Checkout Project
         uses: actions/checkout@v4
         with:
-          submodules: recursive # Récupère tout d'un coup
+          submodules: recursive
 
-      - name: Install Toolchain
+      - name: Install ARM Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
 
-      - name: Setup Pico SDK
+      - name: Download Pico SDK
         run: |
-          git clone --depth 1 https://github.com ${GITHUB_WORKSPACE}/pico-sdk
-          cd ${GITHUB_WORKSPACE}/pico-sdk
+          git clone --depth 1 https://github.com $HOME/pico-sdk
+          cd $HOME/pico-sdk
           git submodule update --init --depth 1
 
-      - name: Build Firmware
+      - name: Compile
         run: |
+          export PICO_SDK_PATH=$HOME/pico-sdk
           cd Firmware
-          # On définit le chemin du SDK et on lance le build proprement
-          cmake -S . -B build -DPICO_SDK_PATH=${GITHUB_WORKSPACE}/pico-sdk
-          cmake --build build -j $(nproc)
+          mkdir build
+          cd build
+          # On force CMake à voir le fichier dans le dossier parent
+          cmake .. -DPICO_SDK_PATH=$HOME/pico-sdk
+          make -j$(nproc)
 
-      - name: Upload Artifacts
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: logic-analyzer-firmware
+          name: logic-analyzer-binary
           path: Firmware/build/*.uf2
