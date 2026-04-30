@@ -10,9 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Logic Analyzer Code
         uses: actions/checkout@v4
         with:
+          submodules: 'true'
+          fetch-depth: 1
+
+      - name: Checkout Pico SDK
+        uses: actions/checkout@v4
+        with:
+          repository: raspberrypi/pico-sdk
+          path: pico-sdk
           submodules: 'true'
           fetch-depth: 1
 
@@ -21,19 +29,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
 
-      - name: Setup Pico SDK
-        run: |
-          git clone --depth 1 https://github.com
-          cd pico-sdk
-          git submodule update --init --depth 1
-          echo "PICO_SDK_PATH=$GITHUB_WORKSPACE/pico-sdk" >> $GITHUB_ENV
-
       - name: Build Firmware
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
         run: |
           cd Firmware
           mkdir build
           cd build
-          # Utilisation de -DSDK_FETCH_DEPS=TRUE au cas où le SDK aurait besoin d'autres modules
           cmake ..
           make -j$(nproc)
 
@@ -41,4 +43,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: logic-analyzer-firmware
-          path: Firmware/build/*.uf2
+          path: |
+            Firmware/build/*.uf2
