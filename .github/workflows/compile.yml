@@ -1,4 +1,4 @@
-name: Build LogicAnalyzer (Pico SIMPLE)
+name: Build LogicAnalyzer (Pico WORKING)
 
 on:
   push:
@@ -23,6 +23,11 @@ jobs:
         git -C pico-sdk submodule update --init
         echo "PICO_SDK_PATH=$(pwd)/pico-sdk" >> $GITHUB_ENV
 
+    # ✅ FIX SIMPLE : copier le header au bon endroit AVANT build
+    - name: Fix missing header
+      run: |
+        cp Firmware/LogicAnalyzer/LogicAnalyzer_Board_Settings.h Firmware/
+
     - name: Configure
       run: |
         mkdir build
@@ -31,11 +36,6 @@ jobs:
           -DPICO_SDK_PATH=$PICO_SDK_PATH \
           -DBOARD_TYPE=BOARD_PICO \
           -DPICO_BOARD=pico
-
-    # ✅ FIX SIMPLE ET FIABLE
-    - name: Fix broken include
-      run: |
-        find build -name "*.pio.h" -exec sed -i 's|../LogicAnalyzer_Board_Settings.h|LogicAnalyzer_Board_Settings.h|g' {} +
 
     - name: Build
       run: |
