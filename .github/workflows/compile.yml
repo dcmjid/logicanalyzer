@@ -1,0 +1,42 @@
+name: Compile Pico Firmware
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi
+
+      - name: Setup Pico SDK
+        run: |
+          git clone --depth 1 https://github.com
+          echo "PICO_SDK_PATH=$GITHUB_WORKSPACE/pico-sdk" >> $GITHUB_ENV
+
+      - name: Initialize Pico SDK
+        run: |
+          cd pico-sdk
+          git submodule update --init
+
+      - name: Build Firmware
+        run: |
+          cd Firmware
+          mkdir build
+          cd build
+          cmake ..
+          make -j$(nproc)
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: logic-analyzer-firmware
+          path: Firmware/build/*.uf2
