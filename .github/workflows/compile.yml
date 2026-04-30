@@ -1,4 +1,4 @@
-name: Build LogicAnalyzer (Pico FIX FINAL)
+name: Build LogicAnalyzer (Pico SIMPLE)
 
 on:
   push:
@@ -9,15 +9,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install deps
       run: |
         sudo apt update
         sudo apt install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential git
 
-    - name: Clone Pico SDK
+    - name: Pico SDK
       run: |
         git clone https://github.com/raspberrypi/pico-sdk.git --depth 1
         git -C pico-sdk submodule update --init
@@ -25,27 +25,25 @@ jobs:
 
     - name: Configure
       run: |
-        mkdir -p build
+        mkdir build
         cd build
         cmake ../Firmware/LogicAnalyzer \
           -DPICO_SDK_PATH=$PICO_SDK_PATH \
           -DBOARD_TYPE=BOARD_PICO \
           -DPICO_BOARD=pico
 
-    # 🔥 FIX CRITIQUE ICI
-    - name: Fix broken include in generated file
+    # ✅ FIX SIMPLE ET FIABLE
+    - name: Fix broken include
       run: |
-        sed -i 's|#include "../LogicAnalyzer_Board_Settings.h"|#include "LogicAnalyzer_Board_Settings.h"|g' build/LogicAnalyzer.pio.h
+        find build -name "*.pio.h" -exec sed -i 's|../LogicAnalyzer_Board_Settings.h|LogicAnalyzer_Board_Settings.h|g' {} +
 
     - name: Build
       run: |
         cd build
         make -j$(nproc)
 
-    - name: Upload firmware
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: logic-analyzer-pico
-        path: |
-          build/*.uf2
-          build/*.elf
+        name: firmware
+        path: build/*.uf2
