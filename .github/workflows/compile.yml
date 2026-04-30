@@ -19,7 +19,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
 
       - name: Setup Pico SDK
         run: |
@@ -33,6 +33,7 @@ jobs:
           cd Firmware
           mkdir build
           cd build
+          # Utilisation de -DSDK_FETCH_DEPS=TRUE au cas où le SDK aurait besoin d'autres modules
           cmake ..
           make -j$(nproc)
 
